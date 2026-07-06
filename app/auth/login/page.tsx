@@ -1,0 +1,113 @@
+"use client";
+
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleAuth = async () => {
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) setError(error.message);
+      else setMessage("Check your email to confirm your account!");
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setError(error.message);
+      else router.push("/");
+    }
+    setLoading(false);
+  };
+
+  const handleGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-neutral-900 rounded-2xl border border-neutral-800 p-8 flex flex-col gap-6">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-violet-400">🎬 FunScript</p>
+          <p className="text-neutral-400 text-sm mt-1">
+            {isSignUp ? "Create your account" : "Welcome back"}
+          </p>
+        </div>
+
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+        {message && (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-2 text-green-400 text-sm">
+            {message}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500"
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAuth()}
+            className="bg-neutral-800 border border-neutral-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-violet-500"
+          />
+        </div>
+
+        <button
+          onClick={handleAuth}
+          disabled={loading}
+          className="bg-violet-600 hover:bg-violet-500 rounded-lg py-3 text-sm font-semibold text-white transition-colors disabled:opacity-50"
+        >
+          {loading ? "Please wait…" : isSignUp ? "Create Account" : "Sign In"}
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-neutral-800" />
+          <span className="text-neutral-500 text-xs">or</span>
+          <div className="h-px flex-1 bg-neutral-800" />
+        </div>
+
+        <button
+          onClick={handleGoogle}
+          className="bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded-lg py-3 text-sm font-medium text-white transition-colors"
+        >
+          Continue with Google
+        </button>
+
+        <p className="text-center text-neutral-500 text-sm">
+          {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+          <button
+            onClick={() => setIsSignUp((s) => !s)}
+            className="text-violet-400 hover:text-violet-300"
+          >
+            {isSignUp ? "Sign in" : "Sign up"}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
